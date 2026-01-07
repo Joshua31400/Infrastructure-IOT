@@ -1,0 +1,92 @@
+services:
+  # LDAP Server
+  ldap:
+    image: osixia/openldap:latest
+    container_name: ldap
+    hostname: ldap
+    environment:
+      - LDAP_ORGANISATION=MyCompany
+      - LDAP_DOMAIN=mycompany.local
+      - LDAP_ADMIN_PASSWORD=admin
+    networks:
+      zone-d-dmz:
+        ipv4_address: 10.0.0.10
+    ports:
+      - "636:636"
+    volumes:
+      - ldap-data:/var/lib/ldap
+      - ldap-config:/etc/ldap/slapd.d
+    restart: unless-stopped
+
+  # MQTT Broker (Mosquitto)
+  broker-mqtt:
+    image: eclipse-mosquitto:latest
+    container_name: broker-mqtt
+    hostname: broker-mqtt
+    networks:
+      zone-d-dmz:
+        ipv4_address: 10.0.0.20
+    ports:
+      - "8883:8883"
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    restart: unless-stopped
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    hostname: grafana
+    networks:
+      zone-d-dmz:
+        ipv4_address: 10.0.0.30
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SERVER_ROOT_URL=http://10.0.0.30:3000
+    restart: unless-stopped
+
+  # InfluxDB (Logs)
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    hostname: influxdb
+    networks:
+      zone-d-dmz:
+        ipv4_address: 10.0.0.40
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpass123
+      - DOCKER_INFLUXDB_INIT_ORG=myorg
+      - DOCKER_INFLUXDB_INIT_BUCKET=iot-data
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken123456
+    restart: unless-stopped
+
+networks:
+  zone-d-dmz:
+    name: zone-d-dmz
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/24
+          gateway: 10.0.0.1
+
+volumes:
+  ldap-data:
+  ldap-config:
+  mosquitto-data:
+  mosquitto-log:
+  grafana-data:
+  influxdb-data:
