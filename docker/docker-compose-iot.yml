@@ -1,0 +1,69 @@
+services:
+  capteur-t1:
+    image: alpine:latest
+    container_name: capteur-t1
+    hostname: capteur-t1
+    command: |
+      sh -c "
+      apk add --no-cache mosquitto-clients bash
+      echo 'Capteur T1 initialized - Sending temperature data..'
+      while true; do
+        TEMP=\$((20 + RANDOM % 15))
+        mosquitto_pub -h 10.0.0.20 -p 8883 -t 'iot/temperature' -m '{\"sensor\":\"T1\",\"value\":'\$TEMP',\"unit\":\"C\"}'
+        echo \"Temperature sent: \$TEMP°C\"
+        sleep 5
+      done
+      "
+    networks:
+      zone-a-iot:
+        ipv4_address: 192.168.10.10
+    restart: unless-stopped
+
+  capteur-c1:
+    image: alpine:latest
+    container_name: capteur-c1
+    hostname: capteur-c1
+    command: |
+      sh -c "
+      apk add --no-cache mosquitto-clients bash
+      echo 'Capteur C1 initialized - Sending electric consume data...'
+      while true; do
+        POWER=\$((100 + RANDOM % 400))
+        mosquitto_pub -h 10.0.0.20 -p 8883 -t 'iot/power' -m '{\"sensor\":\"C1\",\"value\":'\$POWER',\"unit\":\"W\"}'
+        echo \"Consume sent: \$POWER W\"
+        sleep 5
+      done
+      "
+    networks:
+      zone-a-iot:
+        ipv4_address: 192.168.10.11
+    restart: unless-stopped
+
+  capteur-v1:
+    image: alpine:latest
+    container_name: capteur-v1
+    hostname: capteur-v1
+    command: |
+      sh -c "
+      apk add --no-cache mosquitto-clients bash
+      echo 'Capteur V1 initialized - Sending vibration data...'
+      while true; do
+        VIB=\$((RANDOM % 100))
+        mosquitto_pub -h 10.0.0.20 -p 8883 -t 'iot/vibration' -m '{\"sensor\":\"V1\",\"value\":'\$VIB',\"unit\":\"Hz\"}'
+        echo \"Vibration sent: \$VIB Hz\"
+        sleep 5
+      done
+      "
+    networks:
+      zone-a-iot:
+        ipv4_address: 192.168.10.12
+    restart: unless-stopped
+
+networks:
+  zone-a-iot:
+    name: zone-a-iot
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.10.0/24
+          gateway: 192.168.10.1

@@ -1,0 +1,61 @@
+services:
+  firewall:
+    image: alpine:latest
+    container_name: firewall
+    hostname: firewall
+    command: |
+      sh -c "
+      apk add --no-cache iptables tcpdump
+
+      sysctl -w net.ipv4.ip_forward=1
+      
+      iptables -F
+      iptables -X
+      iptables -t nat -F
+      iptables -t nat -X
+
+      iptables -P INPUT DROP
+      iptables -P FORWARD DROP
+      iptables -P OUTPUT ACCEPT
+
+      iptables -A INPUT -i lo -j ACCEPT
+      iptables -A OUTPUT -o lo -j ACCEPT
+
+      iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+      iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+      iptables -A FORWARD -s 192.168.10.0/24 -d 10.0.0.0/24 -p tcp --dport 8883 -j ACCEPT
+
+      iptables -A FORWARD -s 192.168.20.0/24 -d 10.0.0.0/24 -p tcp -m multiport --dports 22,443,3000,8086 -j ACCEPT
+
+      iptables -A FORWARD -s 192.168.30.0/24 -d 10.0.0.0/24 -p tcp --dport 443 -j ACCEPT
+
+      iptables -A FORWARD -s 10.0.0.0/24 -o eth0 -j ACCEPT
+
+      iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+      
+      echo 'Firewall running!'
+      tail -f /dev/null
+      "
+    cap_add:
+      - NET_ADMIN
+    networks:
+      zone-a-iot:
+        ipv4_address: 192.168.10.1
+      zone-b-admin:
+        ipv4_address: 192.168.20.1
+      zone-c-bureautique:
+        ipv4_address: 192.168.30.1
+      zone-d-dmz:
+        ipv4_address: 10.0.0.1
+    restart: unless-stopped
+
+networks:
+  zone-a-iot:
+    external: true
+  zone-b-admin:
+    external: true
+  zone-c-bureautique:
+    external: true
+  zone-d-dmz:
+    external: true
