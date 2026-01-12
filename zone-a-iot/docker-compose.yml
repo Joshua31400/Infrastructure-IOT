@@ -1,0 +1,115 @@
+services:
+  # Capteur Température
+  capteur-t1:
+    image: alpine:latest
+    container_name: capteur-t1
+    hostname: capteur-t1
+    command: |
+      sh -c "
+      apk add --no-cache mosquitto-clients bash openssl
+      
+      echo '🌡️ Capteur T1 démarré'
+      
+      while true; do
+        TEMP=\$((20 + RANDOM % 15))
+        TIMESTAMP=\$(date +%s)
+      
+        # Publier avec certificat client
+        mosquitto_pub \
+          --cafile /certs/ca.crt \
+          --cert /certs/client-capteur.crt \
+          --key /certs/client-capteur.key \
+          -h 10.0.0.20 \
+          -p 8883 \
+          -t 'iot/temperature' \
+          -m '{\"sensor\":\"T1\",\"value\":'\$TEMP',\"unit\":\"C\",\"timestamp\":'\$TIMESTAMP'}'
+      
+        echo \"[\$(date)] Température envoyée: \$TEMP°C\"
+        sleep 5
+      done
+      "
+    networks:
+      zone-a-iot:
+        ipv4_address: 192.168.10.10
+    volumes:
+      - ../certificates/certs:/certs:ro
+    restart: unless-stopped
+
+  # Capteur Consommation
+  capteur-c1:
+    image: alpine:latest
+    container_name: capteur-c1
+    hostname: capteur-c1
+    command: |
+      sh -c "
+      apk add --no-cache mosquitto-clients bash openssl
+      
+      echo '⚡ Capteur C1 démarré'
+      
+      while true; do
+        POWER=\$((100 + RANDOM % 400))
+        TIMESTAMP=\$(date +%s)
+      
+        mosquitto_pub \
+          --cafile /certs/ca.crt \
+          --cert /certs/client-capteur.crt \
+          --key /certs/client-capteur.key \
+          -h 10.0.0.20 \
+          -p 8883 \
+          -t 'iot/power' \
+          -m '{\"sensor\":\"C1\",\"value\":'\$POWER',\"unit\":\"W\",\"timestamp\":'\$TIMESTAMP'}'
+      
+        echo \"[\$(date)] Consommation envoyée: \$POWER W\"
+        sleep 5
+      done
+      "
+    networks:
+      zone-a-iot:
+        ipv4_address: 192.168.10.11
+    volumes:
+      - ../certificates/certs:/certs:ro
+    restart: unless-stopped
+
+  # Capteur Vibration
+  capteur-v1:
+    image: alpine:latest
+    container_name: capteur-v1
+    hostname: capteur-v1
+    command: |
+      sh -c "
+      apk add --no-cache mosquitto-clients bash openssl
+      
+      echo '📳 Capteur V1 démarré'
+      
+      while true; do
+        VIB=\$((RANDOM % 100))
+        TIMESTAMP=\$(date +%s)
+      
+        mosquitto_pub \
+          --cafile /certs/ca.crt \
+          --cert /certs/client-capteur.crt \
+          --key /certs/client-capteur.key \
+          -h 10.0.0.20 \
+          -p 8883 \
+          -t 'iot/vibration' \
+          -m '{\"sensor\":\"V1\",\"value\":'\$VIB',\"unit\":\"Hz\",\"timestamp\":'\$TIMESTAMP'}'
+      
+        echo \"[\$(date)] Vibration envoyée: \$VIB Hz\"
+        sleep 5
+      done
+      "
+    networks:
+      zone-a-iot:
+        ipv4_address: 192.168.10.12
+    volumes:
+      - ../certificates/certs:/certs:ro
+    restart: unless-stopped
+
+networks:
+  zone-a-iot:
+    name: zone-a-iot
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.10.0/24
+          gateway: 192.168.10.1

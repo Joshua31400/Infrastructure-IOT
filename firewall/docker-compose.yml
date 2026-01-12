@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  firewall:
+    image: alpine:latest
+    container_name: firewall
+    hostname: firewall
+    command: |
+      sh -c "
+      apk add --no-cache iptables tcpdump curl bash jq
+      
+      # Habilitar IP forwarding
+      sysctl -w net.ipv4.ip_forward=1
+      
+      # Limpar regras existentes
+      iptables -F
+      iptables -X
+      iptables -t nat -F
+      iptables -t nat -X
+      
+      # Política padrão: DROP (bloquear tudo)
+      iptables -P INPUT DROP
+      iptables -P FORWARD DROP
+      iptables -P OUTPUT ACCEPT
+      
+      # Permitir loopback
+      iptables -A INPUT -i lo -j ACCEPT
+      iptables -A OUTPUT -o lo -j ACCEPT
+      
+      # Permitir conexões estabelecidas
+      iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+      iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+      
+      # ===== REGRAS DE FORWARDING COM LOGGING =====
+      
+      # Zone A (IoT) -> Zone D (DMZ) - MQTT porta 8883
+      iptables -A FORWARD -s 192.168.10.0/24 -d 10.0.0.0/24 -p tcp --dport 8883 -j LOG --log-prefix '[FW-IOT-MQTT] ' --log-level 6
+      iptables -A FORWARD -s 192.168.10.0/24 -d 10.0.0.0/24 -p tcp --dport 8883 -j ACCEPT
+      
+      # Zone B (Admin) -> Zone D (DMZ) - SSH, HTTPS, Grafana, InfluxDB
+      iptables -A FORWARD -s 192.168.20.0/24 -d 10.0.0.0/24 -p tcp -m multiport --dports 22,443,3000,8086 -j LOG --log-prefix '[FW-ADMIN-DMZ] ' --log-level 6
+      iptables -A FORWARD -s 192.168.20.0/24 -d 10.0.0.0/24 -p tcp -m multiport --dports 22,443,3000,8086 -j ACCEPT
+      
+      # Zone C (Bureautique) -> Zone D (DMZ) - HTTPS (Grafana apenas)
+      iptables -A FORWARD -s 192.168.30.0/24 -d 10.0.0.0/24 -p tcp --dport 443 -j LOG --log-prefix '[FW-BUREAU-DMZ] ' --log-level 6
+      iptables -A FORWARD -s 192.168.30.0/24 -d 10.0.0.0/24 -p tcp --dport 443 -j ACCEPT
+      
+      # Zone C (Bureautique) -> Zone D (DMZ) - HTTP Grafana (porta 3000)
+      iptables -A FORWARD -s 192.168.30.0/24 -d 10.0.0.30 -p tcp --dport 3000 -j LOG --log-prefix '[FW-BUREAU-GRAFANA] ' --log-level 6
+      iptables -A FORWARD -s 192.168.30.0/24 -d 10.0.0.30 -p tcp --dport 3000 -j ACCEPT
+      
+      # Zone D (DMZ) -> WAN (Internet) - Permitir saída para updates
+      iptables -A FORWARD -s 10.0.0.0/24 -o eth0 -j LOG --log-prefix '[FW-DMZ-WAN] ' --log-level 6
+      iptables -A FORWARD -s 10.0.0.0/24 -o eth0 -j ACCEPT
+      
+      # Tráfego interno DMZ (containers conversam entre si)
+      iptables -A FORWARD -s 10.0.0.0/24 -d 10.0.0.0/24 -j ACCEPT
+      
+      # Logar pacotes BLOQUEADOS
+      iptables -A FORWARD -j LOG --log-prefix '[FW-BLOCKED] ' --log-level 4
+      
+      # NAT para acesso externo (masquerade)
+      iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+      
+      echo '✅ Firewall configurado!'
+      echo 'Regras iptables ativas:'
+      iptables -L FORWARD -n -v
+      
+      # ===== INICIAR LOGGER PARA INFLUXDB =====
+      echo '🔥 Iniciando Firewall Logger...'
+      chmod +x /firewall-logger.sh
+      /firewall-logger.sh &
+      
+      # Manter container rodando
+      tail -f /dev/null
+      "
+    cap_add:
+      - NET_ADMIN
+    networks:
+      zone-a-iot:
+        ipv4_address: 192.168.10.1
+      zone-b-admin:
+        ipv4_address: 192.168.20.1
+      zone-c-bureautique:
+        ipv4_address: 192.168.30.1
+      zone-d-dmz:
+        ipv4_address: 10.0.0.1
+    volumes:
+      - ./firewall-logger.sh:/firewall-logger.sh:ro
+    restart: unless-stopped
+
+networks:
+  zone-a-iot:
+    external: true
+  zone-b-admin:
+    external: true
+  zone-c-bureautique:
+    external: true
+  zone-d-dmz:
+    external: true

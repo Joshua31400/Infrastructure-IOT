@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Máquina Admin
+  admin:
+    image: alpine:latest
+    container_name: admin
+    hostname: admin
+    command: |
+      sh -c "
+      apk add --no-cache openssh curl bash mosquitto-clients
+      
+      # Configurar SSH
+      ssh-keygen -A
+      echo 'root:admin123' | chpasswd
+      
+      echo '🔵 Admin machine démarrée'
+      echo 'SSH: root@admin123'
+      
+      # Iniciar SSH
+      /usr/sbin/sshd -D
+      "
+    networks:
+      zone-b-admin:
+        ipv4_address: 192.168.20.10
+    ports:
+      - "2222:22"  # SSH accessible depuis l'extérieur
+    restart: unless-stopped
+
+  # OpenVPN Server
+  openvpn:
+    image: kylemanna/openvpn:latest
+    container_name: openvpn
+    hostname: openvpn
+    cap_add:
+      - NET_ADMIN
+    networks:
+      zone-b-admin:
+        ipv4_address: 192.168.20.11
+    ports:
+      - "1194:1194/udp"
+    volumes:
+      - openvpn-data:/etc/openvpn
+    environment:
+      - OPENVPN_OPTS=--log /var/log/openvpn.log
+    restart: unless-stopped
+
+networks:
+  zone-b-admin:
+    name: zone-b-admin
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.20.0/24
+          gateway: 192.168.20.1
+
+volumes:
+  openvpn-data:
