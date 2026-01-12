@@ -27,7 +27,7 @@ services:
       - NET_ADMIN
     networks:
       zone-b-admin:
-        ipv4_address: 192.168.20.11
+        ipv4_address: 192.168.20.20
     ports:
       - "1194:1194/udp"
     volumes:
