@@ -28,20 +28,23 @@ Set-Location "$Root\certificates"
 .\generate-certs.ps1
 Set-Location "$Root"
 
-# 2. Deployer DMZ (cree reseau zone-d-dmz)
-Write-Host "[2/6] Deploiement Zone D (DMZ)..." -ForegroundColor Cyan
+# 2. Deployer Firewall FIRST (cree les 4 reseaux)
+Write-Host "[2/6] Deploiement Firewall..." -ForegroundColor Cyan
+Set-Location "$Root\firewall"
+docker-compose up -d
+Set-Location "$Root"
+
+Write-Host "Attente firewall (10s)..." -ForegroundColor Yellow
+Start-Sleep -Seconds 10
+
+# 3. Deployer DMZ (utilise reseau zone-d-dmz)
+Write-Host "[3/6] Deploiement Zone D (DMZ)..." -ForegroundColor Cyan
 Set-Location "$Root\zone-d-dmz"
 docker-compose up -d
 Set-Location "$Root"
 
 Write-Host "Attente services DMZ (30s)..." -ForegroundColor Yellow
 Start-Sleep -Seconds 30
-
-# 3. Deployer Firewall (cree les 4 reseaux)
-Write-Host "[3/6] Deploiement Firewall..." -ForegroundColor Cyan
-Set-Location "$Root\firewall"
-docker-compose up -d
-Set-Location "$Root"
 
 # 4. Deployer Zone A (IoT)
 Write-Host "[4/6] Deploiement Zone A (Capteurs IoT)..." -ForegroundColor Cyan
@@ -69,9 +72,6 @@ Write-Host "  - Grafana    : http://localhost:3000 (admin/admin123)"
 Write-Host "  - InfluxDB   : http://localhost:8086 (admin/adminpass123)"
 Write-Host "  - MQTT Broker: mqtts://localhost:8883 (avec certificats)"
 Write-Host ""
-Write-Host "TESTS RECOMMANDES :" -ForegroundColor Cyan
-Write-Host "  1. Verifier capteurs : docker logs capteur-t1"
-Write-Host "  2. Verifier firewall : docker logs firewall"
-Write-Host "  3. Voir donnees MQTT : docker logs telegraf"
-Write-Host "  4. Verifier containers : docker ps"
+Write-Host "VERIFICATION :" -ForegroundColor Cyan
+Write-Host "  docker ps"
 Write-Host ""
