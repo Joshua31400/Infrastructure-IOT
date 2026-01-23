@@ -19,13 +19,41 @@ openssl genrsa -out ca.key 2048
 openssl req -new -x509 -days 3650 -key ca.key -out ca.crt `
   -subj "/C=FR/ST=IDF/L=Paris/O=UsineIoT/CN=CA-IoT"
 
-# 2. Creer certificat SERVEUR (Broker MQTT)
-Write-Host "[2/4] Creation certificat serveur Mosquitto..." -ForegroundColor Cyan
+# 2. Creer fichier de configuration pour SAN
+Write-Host "[2/4] Creation certificat serveur Mosquitto avec IP SAN..." -ForegroundColor Cyan
+
+# Creer fichier de config OpenSSL
+$sanConfig = @"
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+C = FR
+ST = IDF
+L = Paris
+O = UsineIoT
+CN = broker-mqtt
+
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = broker-mqtt
+DNS.2 = localhost
+IP.1 = 10.0.0.20
+"@
+
+Set-Content -Path "server.cnf" -Value $sanConfig
+
+# Generer certificat serveur avec SAN
 openssl genrsa -out server.key 2048
-openssl req -new -key server.key -out server.csr `
-  -subj "/C=FR/ST=IDF/L=Paris/O=UsineIoT/CN=broker-mqtt"
+openssl req -new -key server.key -out server.csr -config server.cnf
 openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key `
-  -CAcreateserial -out server.crt -days 365
+  -CAcreateserial -out server.crt -days 365 -extensions v3_req -extfile server.cnf
 
 # 3. Creer certificat CLIENT (Capteurs)
 Write-Host "[3/4] Creation certificat client capteur..." -ForegroundColor Cyan
@@ -44,7 +72,7 @@ openssl x509 -req -in client-telegraf.csr -CA ca.crt -CAkey ca.key `
   -CAcreateserial -out client-telegraf.crt -days 365
 
 # Nettoyage
-Remove-Item *.csr, *.srl -ErrorAction SilentlyContinue
+Remove-Item *.csr, *.srl, server.cnf -ErrorAction SilentlyContinue
 
 Write-Host "[OK] Certificats generes dans $CERT_DIR" -ForegroundColor Green
 Get-ChildItem -File

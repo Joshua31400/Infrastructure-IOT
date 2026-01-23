@@ -24,26 +24,6 @@ services:
       - "2222:22"
     restart: unless-stopped
 
-  openvpn:
-    image: kylemanna/openvpn:latest
-    container_name: openvpn
-    hostname: openvpn
-    cap_add:
-      - NET_ADMIN
-    networks:
-      zone-b-admin:
-        ipv4_address: 192.168.20.11
-    ports:
-      - "1194:1194/udp"
-    volumes:
-      - openvpn-data:/etc/openvpn
-    environment:
-      - OPENVPN_OPTS=--log /var/log/openvpn.log
-    restart: unless-stopped
-
 networks:
   zone-b-admin:
     external: true
-
-volumes:
-  openvpn-data:
