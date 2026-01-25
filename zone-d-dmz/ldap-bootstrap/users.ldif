@@ -1,0 +1,18 @@
+dn: ou=People,dc=usine,dc=local
+objectClass: organizationalUnit
+ou: People
+
+dn: cn=pedro,ou=People,dc=usine,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+cn: pedro
+sn: Martins
+givenName: Pedro
+uid: pedro
+uidNumber: 1000
+gidNumber: 1000
+homeDirectory: /home/pedro
+loginShell: /bin/bash
+userPassword: pedroldap
+mail: pedro@usine.local

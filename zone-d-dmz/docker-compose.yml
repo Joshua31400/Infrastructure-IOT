@@ -50,11 +50,15 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ../certificates/certs:/etc/grafana/certs:ro
+      - ./grafana_config/ldap.toml:/etc/grafana/ldap.toml:ro
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
       - GF_SERVER_ROOT_URL=http://10.0.0.30:3000
       - GF_INSTALL_PLUGINS=grafana-mqtt-datasource
+      - GF_AUTH_LDAP_ENABLED=true
+      - GF_AUTH_LDAP_CONFIG_FILE=/etc/grafana/ldap.toml
+      - GF_AUTH_LDAP_ALLOW_SIGN_UP=true
     depends_on:
       - influxdb
     restart: unless-stopped
@@ -67,11 +71,13 @@ services:
       zone-d-dmz:
         ipv4_address: 10.0.0.10
     ports:
+      - "389:389" # Port LDAP non sécurisé pour les tests
       - "636:636"
     environment:
       - LDAP_ORGANISATION=UsineIoT
       - LDAP_DOMAIN=usine.local
-      - LDAP_ADMIN_PASSWORD=ldapadmin
+      - LDAP_ADMIN_PASSWORD=adminldap
+      - LDAP_CONFIG_PASSWORD=config
     volumes:
       - ldap-data:/var/lib/ldap
       - ldap-config:/etc/ldap/slapd.d
