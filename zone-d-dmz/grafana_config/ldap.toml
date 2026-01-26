@@ -1,23 +1,21 @@
-# ! Config non sécurisée (test)
+verbose_logging = true
 [[servers]]
-host = "10.0.0.10"     # L'IP de ton conteneur LDAP définie dans ton docker-compose
-port = 389             #  !!!!!!!!!!!
-use_ssl = false        #  !!!!!!!!!!!
+host = "ldap"
+port = 636
+use_ssl = true
 start_tls = false
-ssl_skip_verify = true #  !!!!!!!!!!!
-
-# Utilisateur
+ssl_skip_verify = true
+root_ca_cert = "/etc/grafana/certs/ca.crt"
 bind_dn = "cn=admin,dc=usine,dc=local"
 bind_password = "adminldap"
-
-# Filtre de recherche des utilisateurs pour trouver les membres du groupe peaple dans l'annuaire LDAP *fichier users.ldif
-search_filter = "(cn=%s)"
 search_base_dns = ["ou=People,dc=usine,dc=local"]
-
-# Format d'enregistrement des utilisateurs dans l'annuaire LDAP
+search_filter = "(uid=%s)"
 [servers.attributes]
-name = "givenName"
-surname = "sn"
-username = "cn"
-member_of = "memberOf"
-email =  "mail"
+name = "givenName"      # Pedro
+surname = "sn"          # Martins
+username = "uid"        # pedro
+email = "mail"          # pedro@usine.local
+[[servers.group_mappings]]
+group_dn = "ou=People,dc=usine,dc=local"
+org_role = "Admin"
+# org_id = 1
