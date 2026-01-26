@@ -12,19 +12,12 @@ services:
       echo 'Capteur T1 demarre'
       
       while true; do
-        TEMP=\$((20 + RANDOM % 15))
-        TIMESTAMP=\$(date +%s)
+        TEMP=$$((20 + RANDOM % 15))
+        TIMESTAMP=$$(date +%s)
       
-        mosquitto_pub \
-          --cafile /certs/ca.crt \
-          --cert /certs/client-capteur.crt \
-          --key /certs/client-capteur.key \
-          -h 10.0.0.20 \
-          -p 8883 \
-          -t 'iot/temperature' \
-          -m '{\"sensor\":\"T1\",\"value\":'\$TEMP',\"unit\":\"C\",\"timestamp\":'\$TIMESTAMP'}'
+        mosquitto_pub --cafile /certs/ca.crt --cert /certs/client-capteur.crt --key /certs/client-capteur.key -h 10.0.0.20 -p 8883 -t 'iot/temperature' -m '{\"sensor\":\"T1\",\"value\":'$$TEMP',\"unit\":\"C\",\"timestamp\":'$$TIMESTAMP'}'
       
-        echo \"[\$(date)] Temperature envoyee: \$TEMP C\"
+        echo \"[$$(date)] Temperature envoyee: $$TEMP C\"
         sleep 5
       done
       "
@@ -46,19 +39,12 @@ services:
       echo 'Capteur C1 demarre'
       
       while true; do
-        POWER=\$((100 + RANDOM % 400))
-        TIMESTAMP=\$(date +%s)
+        POWER=$$((100 + RANDOM % 400))
+        TIMESTAMP=$$(date +%s)
       
-        mosquitto_pub \
-          --cafile /certs/ca.crt \
-          --cert /certs/client-capteur.crt \
-          --key /certs/client-capteur.key \
-          -h 10.0.0.20 \
-          -p 8883 \
-          -t 'iot/power' \
-          -m '{\"sensor\":\"C1\",\"value\":'\$POWER',\"unit\":\"W\",\"timestamp\":'\$TIMESTAMP'}'
+        mosquitto_pub --cafile /certs/ca.crt --cert /certs/client-capteur.crt --key /certs/client-capteur.key -h 10.0.0.20 -p 8883 -t 'iot/power' -m '{\"sensor\":\"C1\",\"value\":'$$POWER',\"unit\":\"W\",\"timestamp\":'$$TIMESTAMP'}'
       
-        echo \"[\$(date)] Consommation envoyee: \$POWER W\"
+        echo \"[$$(date)] Consommation envoyee: $$POWER W\"
         sleep 5
       done
       "
@@ -80,19 +66,12 @@ services:
       echo 'Capteur V1 demarre'
       
       while true; do
-        VIB=\$((RANDOM % 100))
-        TIMESTAMP=\$(date +%s)
+        VIB=$$((RANDOM % 100))
+        TIMESTAMP=$$(date +%s)
       
-        mosquitto_pub \
-          --cafile /certs/ca.crt \
-          --cert /certs/client-capteur.crt \
-          --key /certs/client-capteur.key \
-          -h 10.0.0.20 \
-          -p 8883 \
-          -t 'iot/vibration' \
-          -m '{\"sensor\":\"V1\",\"value\":'\$VIB',\"unit\":\"Hz\",\"timestamp\":'\$TIMESTAMP'}'
+        mosquitto_pub --cafile /certs/ca.crt --cert /certs/client-capteur.crt --key /certs/client-capteur.key -h 10.0.0.20 -p 8883 -t 'iot/vibration' -m '{\"sensor\":\"V1\",\"value\":'$$VIB',\"unit\":\"Hz\",\"timestamp\":'$$TIMESTAMP'}'
       
-        echo \"[\$(date)] Vibration envoyee: \$VIB Hz\"
+        echo \"[$$(date)] Vibration envoyee: $$VIB Hz\"
         sleep 5
       done
       "

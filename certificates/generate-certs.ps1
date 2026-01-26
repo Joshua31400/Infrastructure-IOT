@@ -63,13 +63,13 @@ openssl req -new -key client-capteur.key -out client-capteur.csr `
 openssl x509 -req -in client-capteur.csr -CA ca.crt -CAkey ca.key `
   -CAcreateserial -out client-capteur.crt -days 365
 
-# 4. Creer certificat CLIENT (Telegraf)
-Write-Host "[4/4] Creation certificat client Telegraf..." -ForegroundColor Cyan
-openssl genrsa -out client-telegraf.key 2048
-openssl req -new -key client-telegraf.key -out client-telegraf.csr `
-  -subj "/C=FR/ST=IDF/L=Paris/O=UsineIoT/CN=telegraf"
-openssl x509 -req -in client-telegraf.csr -CA ca.crt -CAkey ca.key `
-  -CAcreateserial -out client-telegraf.crt -days 365
+# 4. Creer certificat CLIENT (Grafana)
+Write-Host "[4/4] Creation certificat client Grafana..." -ForegroundColor Cyan
+openssl genrsa -out client-grafana.key 2048
+openssl req -new -key client-grafana.key -out client-grafana.csr `
+  -subj "/C=FR/ST=IDF/L=Paris/O=UsineIoT/CN=grafana"
+openssl x509 -req -in client-grafana.csr -CA ca.crt -CAkey ca.key `
+  -CAcreateserial -out client-grafana.crt -days 365
 
 # Nettoyage
 Remove-Item *.csr, *.srl, server.cnf -ErrorAction SilentlyContinue

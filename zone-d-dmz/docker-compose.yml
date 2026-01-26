@@ -18,21 +18,6 @@ services:
       - mosquitto-log:/mosquitto/log
     restart: unless-stopped
 
-  telegraf:
-    image: telegraf:latest
-    container_name: telegraf
-    hostname: telegraf
-    networks:
-      zone-d-dmz:
-        ipv4_address: 10.0.0.25
-    volumes:
-      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
-      - ../certificates/certs:/etc/telegraf/certs:ro
-    depends_on:
-      - broker-mqtt
-      - influxdb
-    restart: unless-stopped
-
   influxdb:
     image: influxdb:2.7
     container_name: influxdb
@@ -49,7 +34,7 @@ services:
       - DOCKER_INFLUXDB_INIT_USERNAME=admin
       - DOCKER_INFLUXDB_INIT_PASSWORD=adminpass123
       - DOCKER_INFLUXDB_INIT_ORG=usine-iot
-      - DOCKER_INFLUXDB_INIT_BUCKET=iot-data
+      - DOCKER_INFLUXDB_INIT_BUCKET=firewall-logs
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken123456
     restart: unless-stopped
 
@@ -64,10 +49,12 @@ services:
       - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
+      - ../certificates/certs:/etc/grafana/certs:ro
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
       - GF_SERVER_ROOT_URL=http://10.0.0.30:3000
+      - GF_INSTALL_PLUGINS=grafana-mqtt-datasource
     depends_on:
       - influxdb
     restart: unless-stopped

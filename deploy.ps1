@@ -43,8 +43,8 @@ Set-Location "$Root\zone-d-dmz"
 docker-compose up -d
 Set-Location "$Root"
 
-Write-Host "Attente services DMZ (30s)..." -ForegroundColor Yellow
-Start-Sleep -Seconds 30
+Write-Host "Attente services DMZ (20s)..." -ForegroundColor Yellow
+Start-Sleep -Seconds 20
 
 # 4. Deployer Zone A (IoT)
 Write-Host "[4/6] Deploiement Zone A (Capteurs IoT)..." -ForegroundColor Cyan
