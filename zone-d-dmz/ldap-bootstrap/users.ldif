@@ -16,3 +16,4 @@ homeDirectory: /home/pedro
 loginShell: /bin/bash
 userPassword: pedroldap
 mail: pedro@usine.local
+
