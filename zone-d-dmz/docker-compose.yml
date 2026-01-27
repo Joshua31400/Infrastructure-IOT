@@ -51,6 +51,7 @@ services:
       - grafana-data:/var/lib/grafana
       - ../certificates/certs:/etc/grafana/certs:ro
       - ./grafana_config/ldap.toml:/etc/grafana/ldap.toml:ro
+      - ./grafana_config/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
