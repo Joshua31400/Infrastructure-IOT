@@ -5,9 +5,14 @@ services:
     image: alpine:latest
     container_name: capteur-t1
     hostname: capteur-t1
+    cap_add:
+      - NET_ADMIN
     command: |
       sh -c "
-      apk add --no-cache mosquitto-clients bash openssl
+      apk add --no-cache mosquitto-clients bash openssl iproute2
+      
+      ip route del default
+      ip route add default via 192.168.10.254
       
       echo 'Capteur T1 demarre'
       
@@ -32,9 +37,14 @@ services:
     image: alpine:latest
     container_name: capteur-c1
     hostname: capteur-c1
+    cap_add:
+      - NET_ADMIN
     command: |
       sh -c "
-      apk add --no-cache mosquitto-clients bash openssl
+      apk add --no-cache mosquitto-clients bash openssl iproute2
+      
+      ip route del default
+      ip route add default via 192.168.10.254
       
       echo 'Capteur C1 demarre'
       
@@ -59,9 +69,14 @@ services:
     image: alpine:latest
     container_name: capteur-v1
     hostname: capteur-v1
+    cap_add:
+      - NET_ADMIN
     command: |
       sh -c "
-      apk add --no-cache mosquitto-clients bash openssl
+      apk add --no-cache mosquitto-clients bash openssl iproute2
+      
+      ip route del default
+      ip route add default via 192.168.10.254
       
       echo 'Capteur V1 demarre'
       
