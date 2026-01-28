@@ -108,3 +108,23 @@ Le déploiement de cette zone est défini dans le fichier Docker Compose situé 
 - [Documentation InfluxDB](https://docs.influxdata.com/influxdb/)
 - [Documentation Grafana](https://grafana.com/docs/)
 - [Documentation OpenLDAP](https://www.openldap.org/doc/)
+
+---
+
+## 📊 Scripts Grafana (Flux/InfluxQL)
+
+Cet espace est dédié à la documentation et au partage des scripts utilisés dans les dashboards Grafana pour l'analyse des logs et métriques de la zone DMZ.
+
+### Exemple de script Flux pour l'analyse des logs du firewall
+
+```flux
+from(bucket: "firewall-logs")
+  |> range(start: -1h)
+  |> filter(fn: (r) => r["_measurement"] == "firewall_logs")
+  |> filter(fn: (r) => r["_field"] == "dport" or r["_field"] == "src" or r["_field"] == "dst")
+  |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+  |> keep(columns: ["_time", "action", "src", "dst", "dport", "zone_src", "zone_dst", "proto"])
+  |> sort(columns: ["_time"], desc: true)
+```
+
+> Ajoutez ici d'autres scripts utiles pour Grafana (requêtes Flux, InfluxQL, SQL, etc.) afin de faciliter la supervision et l'audit de la zone D.
