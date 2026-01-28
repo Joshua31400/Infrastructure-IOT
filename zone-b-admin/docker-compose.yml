@@ -17,6 +17,9 @@ services:
       ssh-keygen -A
       echo 'root:admin123' | chpasswd
       
+      sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+      echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+      
       echo 'Admin machine demarree'
       echo 'SSH: root@admin123'
       
