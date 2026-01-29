@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "grafana-mqtt-datasource",
-        "uid": "dfb2an3fnrzlsf"
+        "uid": "mqtt-iot"
       },
       "fieldConfig": {
         "defaults": {
@@ -149,7 +149,7 @@
     {
       "datasource": {
         "type": "grafana-mqtt-datasource",
-        "uid": "dfb2an3fnrzlsf"
+        "uid": "mqtt-iot"
       },
       "fieldConfig": {
         "defaults": {
@@ -279,7 +279,7 @@
     {
       "datasource": {
         "type": "grafana-mqtt-datasource",
-        "uid": "dfb2an3fnrzlsf"
+        "uid": "mqtt-iot"
       },
       "fieldConfig": {
         "defaults": {
@@ -341,7 +341,7 @@
         {
           "datasource": {
             "type": "grafana-mqtt-datasource",
-            "uid": "dfb2an3fnrzlsf"
+            "uid": "mqtt-iot"
           },
           "refId": "Temperature",
           "topic": "iot/temperature"
@@ -381,6 +381,6 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Iot Dashboard",
-  "uid": "ad8p2qv",
+  "uid": "iot-dashboard-v1",
   "version": 1
 }

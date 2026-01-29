@@ -42,6 +42,7 @@ services:
     image: grafana/grafana-oss:latest
     container_name: grafana
     hostname: grafana
+    user: "0"
     networks:
       zone-d-dmz:
         ipv4_address: 10.0.0.30
@@ -51,7 +52,9 @@ services:
       - grafana-data:/var/lib/grafana
       - ../certificates/certs:/etc/grafana/certs:ro
       - ./grafana_config/ldap.toml:/etc/grafana/ldap.toml:ro
-      - ./grafana_config/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./grafana_config/init-datasources.sh:/init-datasources.sh
+      - ./grafana_config/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ./grafana_dashboards:/etc/grafana/dashboards:ro
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
@@ -63,6 +66,31 @@ services:
     depends_on:
       - influxdb
     restart: unless-stopped
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "🔧 Copie du script vers /tmp pour contourner le blocage Windows..."
+        cp /init-datasources.sh /tmp/init.sh
+        sed -i 's/\r$//' /tmp/init.sh
+        chmod +x /tmp/init.sh
+
+        if ! command -v curl &> /dev/null; then
+            echo "📦 Installation de curl..."
+            apk add --no-cache curl
+        fi
+
+        echo "🚀 Lancement de Grafana..."
+        /run.sh & 
+
+        echo "⏳ Attente (15s)..."
+        sleep 15
+
+        echo "⚡ Execution du script..."
+        /tmp/init.sh
+
+        echo "✅ Termine."
+        wait
 
   ldap:
     image: osixia/openldap:latest
@@ -72,7 +100,7 @@ services:
       zone-d-dmz:
         ipv4_address: 10.0.0.10
     ports:
-      - "389:389" # Port LDAP non sécurisé pour les tests
+      - "389:389"
       - "636:636"
     environment:
       - LDAP_ORGANISATION=UsineIoT
