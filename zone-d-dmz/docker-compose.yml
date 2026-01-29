@@ -52,6 +52,8 @@ services:
       - ../certificates/certs:/etc/grafana/certs:ro
       - ./grafana_config/ldap.toml:/etc/grafana/ldap.toml:ro
       - ./grafana_config/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./grafana_config/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ./grafana_dashboards:/etc/grafana/dashboards:ro
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
@@ -72,7 +74,7 @@ services:
       zone-d-dmz:
         ipv4_address: 10.0.0.10
     ports:
-      - "389:389" # Port LDAP non sécurisé pour les tests
+      - "389:389"
       - "636:636"
     environment:
       - LDAP_ORGANISATION=UsineIoT

@@ -67,7 +67,7 @@ openssl x509 -req -in client-capteur.csr -CA ca.crt -CAkey ca.key `
 Write-Host "[4/4] Creation certificat client Grafana..." -ForegroundColor Cyan
 openssl genrsa -out client-grafana.key 2048
 openssl req -new -key client-grafana.key -out client-grafana.csr `
-  -subj "/C=FR/ST=IDF/L=Paris/O=UsineIoT/CN=grafana"
+  -subj "/C=FR/ST=IDF/L=Paris/O=UsineIoT/CN=grafana_dashboards"
 openssl x509 -req -in client-grafana.csr -CA ca.crt -CAkey ca.key `
   -CAcreateserial -out client-grafana.crt -days 365
 
