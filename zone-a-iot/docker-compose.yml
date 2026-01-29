@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   capteur-t1:
     image: alpine:latest

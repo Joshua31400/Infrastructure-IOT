@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   firewall:
     image: alpine:latest
