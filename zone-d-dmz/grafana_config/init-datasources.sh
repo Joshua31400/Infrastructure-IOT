@@ -1,24 +1,25 @@
 #!/bin/bash
 
-echo "🔧 Attente du démarrage de Grafana..."
+GRAFANA_URL="http://admin:admin123@localhost:3000"
 
-# Attendre que Grafana soit prêt
-until curl -s http://localhost:3000/api/health | grep -q "ok"; do
-  echo "⏳ Grafana n'est pas encore prêt..."
+echo "🔧 [Script] Démarrage de l'initialisation..."
+
+# 1. Attente active de Grafana
+echo "⏳ [Script] Attente de l'API Grafana..."
+until curl -s -f -o /dev/null "$GRAFANA_URL/api/health"; do
+  echo "   ... Grafana n'est pas encore prêt (Sleep 2s)"
   sleep 2
 done
+echo "✅ [Script] Grafana est en ligne !"
 
-echo "✅ Grafana démarré!"
+# 2. Variables Certificats (Nettoyage des sauts de ligne pour JSON)
+CA_CERT=$(awk '{printf "%s\\n", $0}' /etc/grafana/certs/ca.crt)
+CLIENT_CERT=$(awk '{printf "%s\\n", $0}' /etc/grafana/certs/client-grafana.crt)
+CLIENT_KEY=$(awk '{printf "%s\\n", $0}' /etc/grafana/certs/client-grafana.key)
 
-# Lire les certificats et échapper les newlines
-CA_CERT=$(cat /etc/grafana/certs/ca.crt | awk '{printf "%s\\n", $0}')
-CLIENT_CERT=$(cat /etc/grafana/certs/client-grafana.crt | awk '{printf "%s\\n", $0}')
-CLIENT_KEY=$(cat /etc/grafana/certs/client-grafana.key | awk '{printf "%s\\n", $0}')
-
-echo "📊 Création data source InfluxDB..."
-
-# Créer data source InfluxDB
-curl -X POST http://admin:admin123@localhost:3000/api/datasources \
+# 3. Config INFLUXDB
+echo "📊 [Script] Configuration InfluxDB..."
+curl -s -X POST "$GRAFANA_URL/api/datasources" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "InfluxDB",
@@ -26,6 +27,7 @@ curl -X POST http://admin:admin123@localhost:3000/api/datasources \
     "access": "proxy",
     "url": "http://10.0.0.40:8086",
     "isDefault": true,
+    "uid": "influxdb-logs",
     "jsonData": {
       "version": "Flux",
       "organization": "usine-iot",
@@ -35,29 +37,35 @@ curl -X POST http://admin:admin123@localhost:3000/api/datasources \
     "secureJsonData": {
       "token": "mytoken123456"
     }
-  }' 2>/dev/null
+  }'
 
-echo "🔌 Création data source MQTT..."
+# 4. Config MQTT (CORRECTION CRITIQUE ICI)
+echo "🔌 [Script] Configuration MQTT..."
+cat > /tmp/mqtt_payload.json <<EOF
+{
+  "name": "MQTT Broker IoT",
+  "type": "grafana-mqtt-datasource",
+  "uid": "mqtt-iot",
+  "access": "proxy",
+  "jsonData": {
+    "uri": "mqtts://10.0.0.20:8883",
+    "tlsAuth": true,
+    "tlsAuthWithCACert": true,
+    "tlsSkipVerify": true
+  },
+  "secureJsonData": {
+    "tlsCACert": "$CA_CERT",
+    "tlsClientCert": "$CLIENT_CERT",
+    "tlsClientKey": "$CLIENT_KEY"
+  }
+}
+EOF
 
-# Créer data source MQTT avec certificats
-curl -X POST http://admin:admin123@localhost:3000/api/datasources \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"name\": \"MQTT Broker IoT\",
-    \"type\": \"grafana-mqtt-datasource\",
-    \"uid\": \"mqtt-iot\",
-    \"access\": \"proxy\",
-    \"url\": \"mqtts://10.0.0.20:8883\",
-    \"jsonData\": {
-      \"tlsAuth\": true,
-      \"tlsAuthWithCACert\": true,
-      \"tlsSkipVerify\": false
-    },
-    \"secureJsonData\": {
-      \"tlsCACert\": \"$CA_CERT\",
-      \"tlsClientCert\": \"$CLIENT_CERT\",
-      \"tlsClientKey\": \"$CLIENT_KEY\"
-    }
-  }" 2>/dev/null
+# Envoi de la config
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$GRAFANA_URL/api/datasources" -H "Content-Type: application/json" -d @/tmp/mqtt_payload.json)
 
-echo "✅ Data sources configurés!"
+if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 409 ]; then
+    echo "✅ [Script] MQTT configuré (Code: $HTTP_CODE)"
+else
+    echo "❌ [Script] ERREUR MQTT (Code: $HTTP_CODE)"
+fi
