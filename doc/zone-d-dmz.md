@@ -52,7 +52,9 @@ Le déploiement de cette zone est défini dans le fichier Docker Compose situé 
 - **acl.conf** : Règles d'accès MQTT ([voir acl.conf](../zone-d-dmz/mosquitto/acl.conf)).
 - **ldap.toml** : Configuration LDAP pour Grafana ([voir ldap.toml](../zone-d-dmz/grafana_config/ldap.toml)).
 - **users.ldif** : Utilisateurs LDAP ([voir users.ldif](../zone-d-dmz/ldap-bootstrap/users.ldif)).
-- **dashboard-config** : Exemple de dashboard Grafana ([voir dashboard-config](../zone-d-dmz/grafana/dashboard-config)).
+- **dashboards.yaml** : Initialisation des dashboards pour le volume Grafana dédié([voir dashboard-config](../zone-d-dmz/grafana_config/dashboards.yaml)).
+- **init-datasources.sh** : Script d'initialisation des dashboards .json et d'injections de config([voir init-datasources.sh](../zone-d-dmz/grafana_config/init-datasources.sh)).
+- **iot-dashboard.json** : Exemple de dashboard Grafana pour visualiser les données MQTT ([voir iot-dashboard.json](../zone-d-dmz/grafana_dashboards/iot-dashboard.json)).
 
 ---
 
@@ -71,7 +73,7 @@ Le déploiement de cette zone est défini dans le fichier Docker Compose situé 
    - Vérifier que seuls les utilisateurs autorisés (voir ACL) peuvent publier/s'abonner.
 4. **Tester l'accès Grafana**
    - Accéder à [http://10.0.0.30:3000](http://10.0.0.30:3000)
-   - Se connecter avec un utilisateur LDAP (ex: pedro/pedroldap)
+   - Se connecter avec un utilisateur LDAP admin/admin123 (ex: pedro/pedroldap)
 5. **Tester l'accès InfluxDB**
    - Accéder à [http://10.0.0.40:8086](http://10.0.0.40:8086)
    - Utiliser les identifiants admin/adminpass123
@@ -108,23 +110,3 @@ Le déploiement de cette zone est défini dans le fichier Docker Compose situé 
 - [Documentation InfluxDB](https://docs.influxdata.com/influxdb/)
 - [Documentation Grafana](https://grafana.com/docs/)
 - [Documentation OpenLDAP](https://www.openldap.org/doc/)
-
----
-
-## 📊 Scripts Grafana (Flux/InfluxQL)
-
-Cet espace est dédié à la documentation et au partage des scripts utilisés dans les dashboards Grafana pour l'analyse des logs et métriques de la zone DMZ.
-
-### Exemple de script Flux pour l'analyse des logs du firewall
-
-```flux
-from(bucket: "firewall-logs")
-  |> range(start: -1h)
-  |> filter(fn: (r) => r["_measurement"] == "firewall_logs")
-  |> filter(fn: (r) => r["_field"] == "dport" or r["_field"] == "src" or r["_field"] == "dst")
-  |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-  |> keep(columns: ["_time", "action", "src", "dst", "dport", "zone_src", "zone_dst", "proto"])
-  |> sort(columns: ["_time"], desc: true)
-```
-
-> Ajoutez ici d'autres scripts utiles pour Grafana (requêtes Flux, InfluxQL, SQL, etc.) afin de faciliter la supervision et l'audit de la zone D.
