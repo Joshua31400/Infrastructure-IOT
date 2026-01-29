@@ -51,6 +51,7 @@ services:
       - grafana-data:/var/lib/grafana
       - ../certificates/certs:/etc/grafana/certs:ro
       - ./grafana_config/ldap.toml:/etc/grafana/ldap.toml:ro
+      - ./grafana_config/init-datasources.sh:/init-datasources.sh:ro
       - ./grafana_config/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
       - ./grafana_config/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
       - ./grafana_dashboards:/etc/grafana/dashboards:ro
@@ -62,6 +63,14 @@ services:
       - GF_AUTH_LDAP_ENABLED=true
       - GF_AUTH_LDAP_CONFIG_FILE=/etc/grafana/ldap.toml
       - GF_AUTH_LDAP_ALLOW_SIGN_UP=true
+    command: >
+      sh -c "
+      /run.sh &
+      sleep 15
+      chmod +x /init-datasources.sh
+      /init-datasources.sh
+      wait
+      "
     depends_on:
       - influxdb
     restart: unless-stopped
