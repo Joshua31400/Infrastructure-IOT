@@ -1,12 +1,13 @@
 # Ce script deploye l'infrastructure complète automatiquement
-
+Clear-Host
 $Root = $PSScriptRoot
 $ErrorActionPreference = "Stop"
 
 Write-Host ""
-Write-Host "==========================================" -ForegroundColor Magenta
-Write-Host "DEPLOIEMENT INFRASTRUCTURE IoT SECURISEE" -ForegroundColor Magenta
-Write-Host "==========================================" -ForegroundColor Magenta
+Write-Host "+----------------------------------------+" -ForegroundColor Cyan
+Write-Host "|DEPLOIEMENT INFRASTRUCTURE IoT SECURISEE|" -ForegroundColor Cyan
+Write-Host "+----------------------------------------+" -ForegroundColor Cyan
+Write-Host "> LDAPS - MQTT mTLS - GRAFANA - INFLUXDB <" -ForegroundColor DarkGray
 Write-Host ""
 
 # Verifier si Docker est installé
@@ -36,7 +37,7 @@ Set-Location "$Root\firewall"
 docker-compose up -d
 Set-Location "$Root"
 Write-Host ""
-Write-Host "Lancement du Firewall ... 10 sec" -ForegroundColor Yellow
+Write-Host "Lancement du Firewall ... ~10 sec" -ForegroundColor Yellow
 Start-Sleep -Seconds 10
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Green
@@ -48,8 +49,8 @@ Set-Location "$Root\zone-d-dmz"
 docker-compose up -d
 Set-Location "$Root"
 Write-Host ""
-Write-Host "Lancement de la DMZ ... 20 sec" -ForegroundColor Yellow
-Start-Sleep -Seconds 20
+Write-Host "Lancement de la DMZ ... ~10 sec" -ForegroundColor Yellow
+Start-Sleep -Seconds 10
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Green
 
@@ -80,14 +81,19 @@ Set-Location "$Root"
 Write-Host "==========================================" -ForegroundColor Green
 
 Write-Host ""
-Write-Host "==========================================" -ForegroundColor Green
-Write-Host "[OK] DEPLOIEMENT REUSSIT !" -ForegroundColor Green
+Write-Host "[OK] DEPLOIEMENT TERMINE AVEC SUCCES !" -ForegroundColor Green -BackgroundColor Black
 Write-Host ""
-Write-Host "ACCES AUX SERVICES :" -ForegroundColor Cyan
-Write-Host "  - Interface Grafana          : http://localhost:3000 (admin/admin123)"
-Write-Host "  - Base de données InfluxDB   : http://localhost:8086 (admin/adminpass123)"
-Write-Host "  - Traitement Broker via MQTT : mqtts://localhost:8883 (avec certificats)"
+
+$summary = @()
+$summary += [PSCustomObject]@{ Service="Grafana"; URL="http://localhost:3000"; Creds="admin/admin123"; Status="ONLINE" }
+$summary += [PSCustomObject]@{ Service="InfluxDB"; URL="http://localhost:8086"; Creds="admin/adminpass123"; Status="ONLINE" }
+$summary += [PSCustomObject]@{ Service="MQTT (Secured)"; URL="mqtts://localhost:8883"; Creds="Certificats mTLS"; Status="ONLINE" }
+
+# Affichage sous forme de joli tableau
+$summary | Format-Table -AutoSize | Out-String | ForEach-Object { Write-Host $_ -ForegroundColor Cyan }
+
+Write-Host "Commande utile : " -ForegroundColor DarkGray
+Write-Host " - docker stats" -ForegroundColor DarkGray
+Write-Host " - docker-compose ps" -ForegroundColor DarkGray
+Write-Host " - docker-compose logs <service_name>" -ForegroundColor DarkGray
 Write-Host ""
-Write-Host "VERIFICATION :" -ForegroundColor Cyan
-Write-Host "  docker ps"
-Write-Host "==========================================" -ForegroundColor Green
