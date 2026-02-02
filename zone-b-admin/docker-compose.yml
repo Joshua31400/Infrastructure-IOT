@@ -1,4 +1,5 @@
 services:
+    # Machine d'administration pour la gestion des services et reseau
   admin:
     image: alpine:latest
     container_name: admin
@@ -28,6 +29,47 @@ services:
         ipv4_address: 192.168.20.10
     ports:
       - "2222:22"
+    restart: unless-stopped
+
+  # Serveur OpenVPN pour l'acces distant des administrateurs
+  openvpn-server:
+    image: alpine:latest
+    container_name: openvpn-server
+    hostname: vpn-server
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    sysctls:
+      - net.ipv4.ip_forward=1
+    command: |
+      sh -c "
+      echo 'DEMARRAGE SERVEUR OPENVPN'
+      
+      apk add --no-cache openvpn iptables iproute2 bash
+      
+      mkdir -p /var/log/openvpn
+            
+      ip route del default
+      ip route add default via 192.168.20.254
+      
+      iptables -t nat -A POSTROUTING -s 192.168.20.0/24 -o eth0 -j MASQUERADE
+      
+      echo '[OK] Routage IP active'
+      echo '[OK] Route par defaut : 192.168.20.254 (firewall)'
+      echo '[OK] NAT configure pour les clients VPN'
+      
+      echo '[DEMARRAGE] OpenVPN Server sur UDP:1194...'
+      openvpn --config /etc/openvpn/server.conf
+      "
+    networks:
+      zone-b-admin:
+        ipv4_address: 192.168.20.20
+    ports:
+      - "1194:1194/udp"
+    volumes:
+      - ./openvpn/server.conf:/etc/openvpn/server.conf:ro
+      - ../certificates/certs:/etc/openvpn/certs:ro
     restart: unless-stopped
 
 networks:

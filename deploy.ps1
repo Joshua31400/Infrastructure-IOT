@@ -8,7 +8,7 @@ Write-Host ""
 Write-Host "+----------------------------------------+" -ForegroundColor Cyan
 Write-Host "|DEPLOIEMENT INFRASTRUCTURE IoT SECURISEE|" -ForegroundColor Cyan
 Write-Host "+----------------------------------------+" -ForegroundColor Cyan
-Write-Host "> LDAPS - MQTT mTLS - GRAFANA - INFLUXDB <" -ForegroundColor DarkGray
+Write-Host "> LDAPS - MQTT mTLS - GRAFANA - OPENVPN <" -ForegroundColor DarkGray
 Write-Host ""
 
 # Verifier si Docker est installé
@@ -25,15 +25,22 @@ try {
     exit 1
 }
 
-# 1. Generer certificats
+# 1. Generer certificats MQTT + LDAPS
 Write-Host "==========================================" -ForegroundColor Green
-Write-Host "[1/6] Generation des certificats mTLS..." -ForegroundColor Cyan
+Write-Host "[1/7] Generation des certificats mTLS..." -ForegroundColor Cyan
 Set-Location "$Root\certificates"
 .\generate-certs.ps1
 Set-Location "$Root"
 
+# 1.5 Generer certificats OpenVPN
+Write-Host ""
+Write-Host "[1.5/7] Generation des certificats OpenVPN..." -ForegroundColor Cyan
+Set-Location "$Root\certificates"
+.\generate-certs-openvpn.ps1
+Set-Location "$Root"
+
 # 2. Deployer Firewall FIRST (cree les 4 reseaux)
-Write-Host "[2/6] Deploiement Firewall..." -ForegroundColor Cyan
+Write-Host "[2/7] Deploiement Firewall (avec regles OpenVPN)..." -ForegroundColor Cyan
 Set-Location "$Root\firewall"
 docker-compose up -d
 Set-Location "$Root"
@@ -45,7 +52,7 @@ Write-Host "==========================================" -ForegroundColor Green
 
 # 3. Deployer DMZ (utilise reseau zone-d-dmz)
 Write-Host ""
-Write-Host "[3/6] Deploiement Zone D (DMZ)..." -ForegroundColor Cyan
+Write-Host "[3/7] Deploiement Zone D (DMZ)..." -ForegroundColor Cyan
 Set-Location "$Root\zone-d-dmz"
 docker-compose up -d
 Set-Location "$Root"
@@ -57,16 +64,16 @@ Write-Host "==========================================" -ForegroundColor Green
 
 # 4. Deployer Zone A (IoT)
 Write-Host ""
-Write-Host "[4/6] Deploiement Zone A (Capteurs IoT)..." -ForegroundColor Cyan
+Write-Host "[4/7] Deploiement Zone A (Capteurs IoT)..." -ForegroundColor Cyan
 Set-Location "$Root\zone-a-iot"
 docker-compose up -d
 Set-Location "$Root"
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Green
 
-# 5. Deployer Zone B (Admin)
+# 5. Deployer Zone B (Admin + OpenVPN)
 Write-Host ""
-Write-Host "[5/6] Deploiement Zone B (Admin)..." -ForegroundColor Cyan
+Write-Host "[5/7] Deploiement Zone B (Admin + OpenVPN)..." -ForegroundColor Cyan
 Set-Location "$Root\zone-b-admin"
 docker-compose up -d
 Set-Location "$Root"
@@ -75,10 +82,16 @@ Write-Host "==========================================" -ForegroundColor Green
 
 # 6. Deployer Zone C (Bureautique)
 Write-Host ""
-Write-Host "[6/6] Deploiement Zone C (Bureautique)..." -ForegroundColor Cyan
+Write-Host "[6/7] Deploiement Zone C (Bureautique)..." -ForegroundColor Cyan
 Set-Location "$Root\zone-c-bureautique"
 docker-compose up -d
 Set-Location "$Root"
+Write-Host "==========================================" -ForegroundColor Green
+
+# 7. Generer le fichier client OpenVPN
+Write-Host ""
+Write-Host "[7/7] Generation du fichier client OpenVPN..." -ForegroundColor Cyan
+.\generate-client-config.ps1
 Write-Host "==========================================" -ForegroundColor Green
 
 Write-Host ""
@@ -90,6 +103,7 @@ $summary = @()
 $summary += [PSCustomObject]@{ Service="Grafana"; URL="http://localhost:3000"; Creds="admin/admin123"; Status="ONLINE" }
 $summary += [PSCustomObject]@{ Service="InfluxDB"; URL="http://localhost:8086"; Creds="admin/adminpass123"; Status="ONLINE" }
 $summary += [PSCustomObject]@{ Service="MQTT (Secured)"; URL="mqtts://localhost:8883"; Creds="Certificats mTLS"; Status="ONLINE" }
+$summary += [PSCustomObject]@{ Service="OpenVPN Server"; URL="udp://localhost:1194"; Creds="admin-vpn.ovpn"; Status="ONLINE" }
 
 # Affichage sous forme de joli tableau
 $summary | Format-Table -AutoSize | Out-String | ForEach-Object { Write-Host $_ -ForegroundColor Cyan }
@@ -97,5 +111,5 @@ $summary | Format-Table -AutoSize | Out-String | ForEach-Object { Write-Host $_ 
 Write-Host "Commande utile : " -ForegroundColor DarkGray
 Write-Host " - docker stats" -ForegroundColor DarkGray
 Write-Host " - docker-compose ps" -ForegroundColor DarkGray
-Write-Host " - docker-compose logs <service_name>" -ForegroundColor DarkGray
+Write-Host " - docker-compose logs openvpn-server" -ForegroundColor DarkGray
 Write-Host ""
