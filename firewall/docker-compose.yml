@@ -1,4 +1,5 @@
 services:
+  # Le service firewall qui fait le routage entre les zones et applique les regles iptables
   firewall:
     image: alpine:latest
     container_name: firewall

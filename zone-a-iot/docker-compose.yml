@@ -1,10 +1,14 @@
 services:
+  # Ce service represente un capteur de temperature dans la zone IoT
   capteur-t1:
     image: alpine:latest
     container_name: capteur-t1
     hostname: capteur-t1
+    # Attribution de la capability NET_ADMIN pour modifier la table de routage
     cap_add:
       - NET_ADMIN
+    # Script pour changer la passerelle par defaut (firewall) et garder le container en fonctionnement
+    # Il simule aussi des donnees de capteur de temperature et les publie au broker MQTT
     command: |
       sh -c "
       apk add --no-cache mosquitto-clients bash openssl iproute2
@@ -31,12 +35,16 @@ services:
       - ../certificates/certs:/certs:ro
     restart: unless-stopped
 
+  # Ce service represente un capteur de consommation electrique dans la zone IoT
   capteur-c1:
     image: alpine:latest
     container_name: capteur-c1
     hostname: capteur-c1
+    # Attribution de la capability NET_ADMIN pour modifier la table de routage
     cap_add:
       - NET_ADMIN
+    # Script pour changer la passerelle par defaut (firewall) et garder le container en fonctionnement
+    # Aussi simule des donnees de capteur de consommation electrique et les publie au broker MQTT
     command: |
       sh -c "
       apk add --no-cache mosquitto-clients bash openssl iproute2
@@ -63,12 +71,16 @@ services:
       - ../certificates/certs:/certs:ro
     restart: unless-stopped
 
+  # Ce service represente un capteur de vibration dans la zone IoT
   capteur-v1:
     image: alpine:latest
     container_name: capteur-v1
     hostname: capteur-v1
+    # Attribution de la capability NET_ADMIN pour modifier la table de routage
     cap_add:
       - NET_ADMIN
+    # Script pour changer la passerelle par defaut (firewall) et garder le container en fonctionnement
+    # Aussi simule des donnees de capteur de vibration et les publie au broker MQTT
     command: |
       sh -c "
       apk add --no-cache mosquitto-clients bash openssl iproute2

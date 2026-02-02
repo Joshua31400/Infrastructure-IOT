@@ -1,10 +1,13 @@
 services:
+  # Ce service represente une machine cliente dans la zone Bureautique (representant une personne normale au bureau)
   client1:
     image: alpine:latest
     container_name: client1
     hostname: client1
+    # Cette attribution de capability permet de modifier la table de routage dans le container
     cap_add:
       - NET_ADMIN
+    # Script pour changer la passerelle par defaut (firewall) et garder le container en fonctionnement
     command: |
       sh -c "
       apk add --no-cache curl bash wget iproute2
@@ -19,12 +22,15 @@ services:
         ipv4_address: 192.168.30.10
     restart: unless-stopped
 
+  # Client 2 dans la zone Bureautique
   client2:
     image: alpine:latest
     container_name: client2
     hostname: client2
+    # Attribution de la capability NET_ADMIN pour modifier la table de routage
     cap_add:
       - NET_ADMIN
+    # Script pour changer la passerelle par defaut (firewall) et garder le container en fonctionnement
     command: |
       sh -c "
       apk add --no-cache curl bash wget iproute2

@@ -1,5 +1,6 @@
 # Ce script deploye l'infrastructure complète automatiquement
 Clear-Host
+# Initialisation des variables
 $Root = $PSScriptRoot
 $ErrorActionPreference = "Stop"
 
@@ -84,6 +85,7 @@ Write-Host ""
 Write-Host "[OK] DEPLOIEMENT TERMINE AVEC SUCCES !" -ForegroundColor Green -BackgroundColor Black
 Write-Host ""
 
+# Affichage du resume des services deployes avec $summary tableau
 $summary = @()
 $summary += [PSCustomObject]@{ Service="Grafana"; URL="http://localhost:3000"; Creds="admin/admin123"; Status="ONLINE" }
 $summary += [PSCustomObject]@{ Service="InfluxDB"; URL="http://localhost:8086"; Creds="admin/adminpass123"; Status="ONLINE" }

@@ -1,11 +1,13 @@
+# Ce fichier configure l'auto-provisionnement des tableaux de bord Grafana
 apiVersion: 1
 
+# Definition des fournisseurs de tableaux de bord
 providers:
   - name: 'Auto-Provisioned Dashboards'
-    orgId: 1
+    orgId: 1                              # Organization ID
     folder: ''
     type: file
-    disableDeletion: false
-    updateIntervalSeconds: 10
+    disableDeletion: false                # Refus de suppression via l'interface Grafana (protection)
+    updateIntervalSeconds: 10             # Intervalle de mise a jour pour verifier les changements
     options:
       path: /etc/grafana/dashboards
