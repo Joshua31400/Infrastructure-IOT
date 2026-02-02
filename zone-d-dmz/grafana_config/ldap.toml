@@ -1,10 +1,13 @@
 # ! Config non sécurisée (test)
 [[servers]]
-host = "10.0.0.10"     # L'IP de ton conteneur LDAP définie dans ton docker-compose
-port = 389             #  !!!!!!!!!!!
-use_ssl = false        #  !!!!!!!!!!!
+host = "10.0.0.10"
+port = 636
+use_ssl = true
 start_tls = false
-ssl_skip_verify = true #  !!!!!!!!!!!
+ssl_skip_verify = false
+
+#Certificat CA
+root_ca_cert = "/etc/grafana/certs/ca.crt"
 
 # Utilisateur
 bind_dn = "cn=admin,dc=usine,dc=local"

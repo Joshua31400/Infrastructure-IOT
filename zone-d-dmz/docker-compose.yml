@@ -63,6 +63,7 @@ services:
       - GF_AUTH_LDAP_ALLOW_SIGN_UP=true
     depends_on:
       - influxdb
+      - ldap
     restart: unless-stopped
     entrypoint:
       - /bin/sh
@@ -105,9 +106,20 @@ services:
       - LDAP_DOMAIN=usine.local
       - LDAP_ADMIN_PASSWORD=adminldap
       - LDAP_CONFIG_PASSWORD=config
+      - LDAP_TLS=true
+      - LDAP_TLS_CRT_FILENAME=ldap-server.crt
+      - LDAP_TLS_KEY_FILENAME=ldap-server.key
+      - LDAP_TLS_CA_CRT_FILENAME=ca.crt
+      - LDAP_TLS_VERIFY_CLIENT=never
+      - LDAP_TLS_CIPHER_SUITE=SECURE128
     volumes:
       - ldap-data:/var/lib/ldap
       - ldap-config:/etc/ldap/slapd.d
+      - ../certificates/certs/ldap-server.crt:/container/service/slapd/assets/certs/ldap-server.crt:ro
+      - ../certificates/certs/ldap-server.key:/container/service/slapd/assets/certs/ldap-server.key:ro
+      - ../certificates/certs/ca.crt:/container/service/slapd/assets/certs/ca.crt:ro
+      - ./ldap-bootstrap/users.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/users.ldif:ro
+    command: ["--copy-service", "--loglevel", "debug"]
     restart: unless-stopped
 
 networks:
