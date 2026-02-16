@@ -1,77 +1,301 @@
-# 🛡️ Zone B - Administration (Réseau Admin)
+# Zone B - Administration
 
-## 📌 Description
-Cette zone représente le réseau sécurisé dédié à l'administration de l'infrastructure. Elle permet aux administrateurs d'accéder aux interfaces de gestion, de superviser les services critiques et d'assurer la maintenance du système.
+## Présentation
 
-### Objectifs de la zone
-1. **Accès sécurisé** aux interfaces d'administration (SSH, InfluxDB, Grafana).
-2. **Gestion centralisée** des services et supervision des logs.
-3. **Isolation stricte** du reste du réseau pour limiter la surface d'attaque.
+La Zone B constitue le réseau d'administration sécurisé de l'infrastructure. Elle permet aux administrateurs d'accéder aux services critiques hébergés en DMZ, de superviser l'ensemble du système et d'effectuer les opérations de maintenance.
 
----
-
-## 📂 Configuration
-Le déploiement de cette zone est défini dans le fichier Docker Compose suivant :
-
-👉 **[Voir fichier docker-compose.yml](../zone-b-admin/docker-compose.yml)**
-
-- **Image de base :** Alpine Linux
-- **Adresse IP :** `192.168.20.10`
-- **Accès SSH :** Port 2222 (redirigé vers le port 22 du conteneur)
-- **Routage :** Passage obligatoire par le firewall (`192.168.20.254`)
+L'accès à cette zone peut s'effectuer de deux manières :
+- **SSH** : Connexion directe au conteneur admin via le port 2222
+- **OpenVPN** : Tunnel chiffré permettant un accès distant sécurisé à l'ensemble de l'infrastructure
 
 ---
 
-## ⚙️ Spécificités Techniques
+## Caractéristiques techniques
 
-- **Routage forcé :**
-  - Suppression de la passerelle Docker par défaut.
-  - Ajout du firewall comme unique passerelle de sortie.
-- **Accès SSH :**
-  - Authentification par mot de passe (`root:admin123`) à la première connexion.
-  - **Renouvellement de la clé SSH** obligatoire si le conteneur est recréé :
-    ```bash
-    ssh-keygen -R [localhost]:2222
-    ```
-- **Outils installés :** openssh, curl, bash, mosquitto-clients, iproute2
+| Paramètre | Valeur |
+|-----------|--------|
+| **Sous-réseau** | `192.168.20.0/24` |
+| **Passerelle** | `192.168.20.254` (Firewall) |
+| **Protocoles autorisés** | SSH, HTTP/HTTPS, MQTT vers DMZ |
+| **Image Docker** | `alpine:latest` |
+| **Accès externe** | SSH (port 2222), OpenVPN (UDP 1194) |
 
 ---
 
-## 🧪 Procédure de test
-Pour valider la sécurité et la connectivité de la zone admin, exécutez les tests suivants :
+## Services déployés
+
+| Conteneur | Adresse IP | Port exposé | Fonction |
+|-----------|------------|-------------|----------|
+| `admin` | `192.168.20.10` | `2222` → `22` | Machine d'administration SSH |
+| `openvpn-server` | `192.168.20.20` | `1194/UDP` | Serveur VPN pour accès distant |
+
+---
+
+## Machine d'administration (SSH)
+
+### Accès et authentification
+
+| Paramètre | Valeur |
+|-----------|--------|
+| **Hôte** | `localhost` |
+| **Port** | `2222` |
+| **Utilisateur** | `root` |
+| **Mot de passe** | `admin123` |
+
+**Connexion SSH :**
 
 ```bash
-# 1. Connexion à l'interface d'administration (SSH)
 ssh root@localhost -p 2222
-
-# 2. Tester l'accès à Grafana (autorisé)
-curl -v http://10.0.0.30:3000
-
-# 3. Tester l'accès à InfluxDB (autorisé uniquement pour l'admin)
-curl -v http://10.0.0.40:8086
-
-# 4. Tester l'accès à l'IOT (doit être interdit)
-curl -v telnet://10.0.0.20:8883
 ```
 
-> **Remarque :**
-> - L'accès SSH nécessite de régénérer la clé locale si le conteneur est redéployé.
-> - Seul l'admin peut accéder à InfluxDB, les autres zones sont bloquées.
+### Renouvellement de la clé SSH
+
+Si le conteneur est recréé, la clé SSH change. Vous devrez supprimer l'ancienne clé connue :
+
+```bash
+ssh-keygen -R [localhost]:2222
+```
+
+### Outils disponibles
+
+Le conteneur admin dispose des outils suivants :
+- `openssh` : Accès SSH
+- `curl` : Requêtes HTTP
+- `mosquitto-clients` : Publication/souscription MQTT
+- `iproute2` : Gestion réseau
 
 ---
 
-## 🛠 Commandes Utiles
+## Serveur OpenVPN
+
+### Configuration du serveur
+
+Le serveur OpenVPN est configuré pour fournir un accès sécurisé à l'ensemble de l'infrastructure.
+
+| Paramètre | Valeur |
+|-----------|--------|
+| **Port** | UDP 1194 |
+| **Réseau VPN** | `10.8.0.0/24` |
+| **Chiffrement** | AES-256-GCM |
+| **Authentification** | SHA256 |
+| **TLS minimum** | 1.2 |
+| **Compression** | LZ4 |
+
+### Routes poussées aux clients VPN
+
+Une fois connecté, le client VPN a accès aux réseaux suivants :
+
+| Réseau | Description |
+|--------|-------------|
+| `10.0.0.0/24` | Zone D - DMZ (services critiques) |
+| `192.168.10.0/24` | Zone A - IoT (capteurs) |
+| `192.168.20.0/24` | Zone B - Admin (auto) |
+| `192.168.30.0/24` | Zone C - Bureautique |
+
+### Fichier client OpenVPN
+
+Le script `generate-client-config.ps1` génère automatiquement un fichier `.ovpn` contenant tous les certificats nécessaires.
+
+```powershell
+.\generate-client-config.ps1
+```
+
+Le fichier généré (`admin-vpn.ovpn`) peut être importé dans :
+- **Windows** : OpenVPN GUI
+- **Linux** : `openvpn --config admin-vpn.ovpn`
+- **macOS** : Tunnelblick ou OpenVPN Connect
+
+### Certificats VPN
+
+| Fichier | Emplacement | Description |
+|---------|-------------|-------------|
+| `ca.crt` | `/etc/openvpn/certs/` | Autorité de certification |
+| `vpn-server.crt` | `/etc/openvpn/certs/` | Certificat du serveur VPN |
+| `vpn-server.key` | `/etc/openvpn/certs/` | Clé privée du serveur VPN |
+| `dh2048.pem` | `/etc/openvpn/certs/` | Paramètres Diffie-Hellman |
+| `ta.key` | `/etc/openvpn/certs/` | Clé TLS-Auth (protection DoS) |
+
+---
+
+## Politique de filtrage
+
+Le pare-feu accorde à la Zone B un accès privilégié aux services de la DMZ :
+
+| Source | Destination | Ports | Action | Description |
+|--------|-------------|-------|--------|-------------|
+| `192.168.20.0/24` | `10.0.0.0/24` | TCP 22, 443, 3000, 8086, 8883 | **ACCEPT** | Accès complet admin vers DMZ |
+| `*` | `192.168.20.20` | UDP 1194 | **ACCEPT** | Connexions VPN entrantes |
+| `192.168.20.0/24` | Autres zones | Tous | **DROP** | Pas d'accès direct aux autres zones |
+
+### Services accessibles depuis la Zone B
+
+| Service | Adresse | Port | Protocole |
+|---------|---------|------|-----------|
+| SSH vers DMZ | `10.0.0.X` | 22 | TCP |
+| Grafana | `10.0.0.30` | 3000 | HTTP |
+| InfluxDB | `10.0.0.40` | 8086 | HTTP |
+| MQTT Broker | `10.0.0.20` | 8883 | MQTTS |
+| LDAP | `10.0.0.10` | 389/636 | LDAP/LDAPS |
+
+---
+
+## Configuration Docker Compose
+
+Fichier de configuration : [`zone-b-admin/docker-compose.yml`](../zone-b-admin/docker-compose.yml)
+
+### Machine admin
+
+```yaml
+admin:
+  image: alpine:latest
+  cap_add:
+    - NET_ADMIN
+  networks:
+    zone-b-admin:
+      ipv4_address: 192.168.20.10
+  ports:
+    - "2222:22"
+```
+
+### Serveur OpenVPN
+
+```yaml
+openvpn-server:
+  image: alpine:latest
+  cap_add:
+    - NET_ADMIN
+  devices:
+    - /dev/net/tun
+  sysctls:
+    - net.ipv4.ip_forward=1
+  networks:
+    zone-b-admin:
+      ipv4_address: 192.168.20.20
+  ports:
+    - "1194:1194/udp"
+  volumes:
+    - ./openvpn/server.conf:/etc/openvpn/server.conf:ro
+    - ../certificates/certs:/etc/openvpn/certs:ro
+```
+
+---
+
+## Procédures de test
+
+### Tester l'accès SSH
+
+```bash
+# Connexion à la machine admin
+ssh root@localhost -p 2222
+# Mot de passe : admin123
+```
+
+### Tester l'accès aux services DMZ
+
+Depuis la machine admin :
+
+```bash
+# Accès à Grafana
+curl -v http://10.0.0.30:3000
+
+# Accès à InfluxDB
+curl -v http://10.0.0.40:8086
+
+# Test MQTT (avec certificat)
+mosquitto_sub --cafile /certs/ca.crt \
+  --cert /certs/client-capteur.crt \
+  --key /certs/client-capteur.key \
+  -h 10.0.0.20 -p 8883 -t "iot/#" --tls-version tlsv1.2
+```
+
+### Vérifier la connexion VPN
+
+1. Importer `admin-vpn.ovpn` dans votre client OpenVPN
+2. Se connecter au VPN
+3. Tester l'accès aux services :
+   ```bash
+   curl http://10.0.0.30:3000
+   ping 10.0.0.40
+   ```
+
+### Vérifier le routage
+
+```bash
+docker exec admin ip route
+# Résultat attendu : default via 192.168.20.254
+```
+
+---
+
+## Commandes utiles
+
 | Action | Commande |
-| --- | --- |
-| Démarrer la zone | `docker compose up -d` |
-| Se connecter en SSH | `ssh root@localhost -p 2222` |
+|--------|----------|
+| Démarrer la zone | `docker compose -f zone-b-admin/docker-compose.yml up -d` |
+| Arrêter la zone | `docker compose -f zone-b-admin/docker-compose.yml down` |
+| Connexion SSH | `ssh root@localhost -p 2222` |
+| Renouveler clé SSH | `ssh-keygen -R [localhost]:2222` |
+| Voir les logs admin | `docker logs -f admin` |
+| Voir les logs VPN | `docker logs -f openvpn-server` |
+| Générer fichier client VPN | `.\generate-client-config.ps1` |
 | Vérifier le routage | `docker exec admin ip route` |
-| Voir les logs de config | `docker compose logs admin` |
-| Arrêter la zone | `docker compose down` |
-| Renouveler la clé SSH | `ssh-keygen -R [localhost]:2222` |
 
 ---
 
-## 🔗 Références
-- [README principal](../README.md)
+## Dépannage
+
+### Connexion SSH refusée
+
+1. Vérifier que le conteneur est démarré :
+   ```bash
+   docker ps | grep admin
+   ```
+
+2. Vérifier que le port 2222 est bien exposé :
+   ```bash
+   docker port admin
+   ```
+
+3. Supprimer l'ancienne clé SSH connue :
+   ```bash
+   ssh-keygen -R [localhost]:2222
+   ```
+
+### OpenVPN ne se connecte pas
+
+1. Vérifier que le conteneur VPN est démarré :
+   ```bash
+   docker ps | grep openvpn
+   ```
+
+2. Vérifier les logs du serveur VPN :
+   ```bash
+   docker logs openvpn-server
+   ```
+
+3. Vérifier que le port UDP 1194 est accessible :
+   ```bash
+   netstat -an | findstr 1194
+   ```
+
+### Accès aux services DMZ impossible
+
+1. Vérifier que le pare-feu est démarré :
+   ```bash
+   docker ps | grep firewall
+   ```
+
+2. Vérifier les règles iptables :
+   ```bash
+   docker exec firewall iptables -L -v -n | grep 192.168.20
+   ```
+
+---
+
+## Références
+
+- [Documentation OpenVPN](https://openvpn.net/community-resources/)
+- [OpenSSH Manual](https://www.openssh.com/manual.html)
+- [Configuration serveur VPN](../zone-b-admin/openvpn/server.conf)
 - [Configuration Docker Compose](../zone-b-admin/docker-compose.yml)
+- [Retour au README principal](../README.md)
